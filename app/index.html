@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Arcade Finder</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+  <body class="relative w-full min-h-screen text-white">
+    <!-- Background Layer: fixed, scrollt nicht -->
+    <div class="fixed inset-0 bg-[url('/static/background.jpg')] bg-top bg-no-repeat bg-cover"></div>
+
+    <!-- App Layer -->
+    <div id="app" class="relative w-full">
+      <script type="module">
+        import { h, render } from "https://esm.sh/preact@latest";
+        import { useState, useEffect } from "https://esm.sh/preact@latest/hooks";
+        import htm from "https://esm.sh/htm@3.1.1";
+
+        const html = htm.bind(h);
+
+        const Item = ({description, name, manufacturer, year, cloneof, onClone}) => {
+          return html`
+            <li class="group bg-[url('/static/noimage.png')] bg-top bg-no-repeat bg-cover relative w-80 overflow-hidden rounded-xl ring-1 ring-fuchsia-700 hover:ring-5 hover:ring-orange-500 transition-all duration-300 transform transition-all duration-300 hover:scale-105">
+              <img src="image?name=${name}"
+                   class="h-56 w-full object-contain transition-all duration-1000 group-hover:brightness-25 group-hover:scale-105"
+              />
+
+              <div
+                class="pointer-events-none absolute top-0 left-0 w-full
+                       bg-gradient-to-b from-black/90 to-transparent
+                       px-4 py-3 text-center"
+              >
+                <p class="text-lg font-bold text-white group-hover:text-orange-400 transition-colors duration-300 cursor-default">
+                  ${description}
+                </p>
+              </div>
+
+              <div
+                class="pointer-events-none absolute bottom-0 left-0 w-full
+                       flex items-center justify-between
+                       bg-gradient-to-t from-black/90 to-transparent
+                       px-3 py-2 text-xs text-white"
+              >
+                <div class="flex items-center gap-1 font-bold cursor-default">
+                  <span>📅</span>
+                  <span>${year}</span>
+                </div>
+
+                <div class="flex items-center gap-1 font-extrabold cursor-default">
+                  <span>👾</span>
+                  <span>${manufacturer}</span>
+                </div>
+              </div>
+
+              <div
+  class="absolute inset-0 flex flex-col items-center justify-center gap-2
+         opacity-0 -translate-y-4
+         transition-all duration-300
+         group-hover:opacity-100 group-hover:translate-y-0"
+>
+  <!-- Kleiner zweizeiliger Text -->
+  <div class="text-center text-xs text-white">
+    <p class="font-bold text-xl cursor-default">${name}</p>
+   <p class="font-bold hover:text-orange-400 text-white transition-all duration-500 cursor-pointer" onClick=${() => onClone(cloneof)}>${cloneof && `Clone of ${cloneof}`}</p>
+  </div>
+
+  <!-- Buttons -->
+  <div class="flex gap-3 mt-2">
+    <a target="_blank" href="/redirect?name=${name}&type=dl"
+       class="hover:stroke-orange-400 stroke-white transition-all duration-500">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 24 24" fill="none">
+<path d="M12 7L12 14M12 14L15 11M12 14L9 11" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16 17H12H8" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C21.5093 4.43821 21.8356 5.80655 21.9449 8" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
+    </a>
+
+    <a target="_blank" href="/redirect?name=${name}&type=wiki"
+       class="hover:stroke-orange-400 stroke-white transition-all duration-500">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 24 24" fill="none">
+<path d="M10.125 8.875C10.125 7.83947 10.9645 7 12 7C13.0355 7 13.875 7.83947 13.875 8.875C13.875 9.56245 13.505 10.1635 12.9534 10.4899C12.478 10.7711 12 11.1977 12 11.75V13" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="12" cy="16" r="1" fill="#1C274C"/>
+<path d="M22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C21.5093 4.43821 21.8356 5.80655 21.9449 8" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
+    </a>
+
+  </div>
+</div>
+            </li>
+          `;
+        }
+
+        const Dropdown = ({ label, htmlId, options, value, onChange }) => {
+          const listId = `${htmlId}_${options.length}`;
+          if (!options) return;
+
+          return html`
+            <label for=${htmlId}>${label}</label>
+            <input
+              id=${htmlId}
+              list=${listId}
+              value=${value}
+              onInput=${onChange}
+              class="border px-2 py-1"
+            />
+            <datalist id=${listId}>
+              ${options.map((item) => html`<option value=${item} />`)}
+            </datalist>
+          `;
+        };
+
+        const App = () => {
+          const [textSearch, setTextSearch] = useState('');
+          const [manufacturers, setManufacturers] = useState([]);
+          const [list, setList] = useState([]);
+          const [manuSearch, setManuSearch] = useState('');
+          const [datasetSearch, setDatasetSearch] = useState('');
+          const [datasets, setDatasets] = useState([]);
+
+          useEffect(() => {
+            const fetchData = async () => {
+              const data = await fetch("/dropdowns");
+              const json = await data.json();
+              setManufacturers(json.manufacturers);
+              setDatasets(json.datasets);
+            };
+            fetchData("/companies").catch(console.error);
+          }, []);
+
+          const handleOnClone = async (cl) => {
+              setManuSearch('');
+              setDatasetSearch('');
+              setTextSearch(cl);
+              const x = `q=${encodeURI(cl)}`;
+              const res = await fetch(`/search?${x}`);
+              const list = await res.json();
+              setList(list);
+          }
+
+          const handlefetch = async (e) => {
+            e.preventDefault();
+            const search = `${manuSearch} ${datasetSearch} ${textSearch}`.trim();
+            if (search.length > 0) {
+              const x = `q=${encodeURI(search)}`;
+              const res = await fetch(`/search?${x}`);
+              const list = await res.json();
+              setList(list);
+            }
+          };
+
+          return html`
+            <div class="font-sans text-center mt-12 mb-12">
+              <form onSubmit=${handlefetch} class="mb-6 space-x-2">
+                <input
+                  class="border px-2 py-1"
+                  name="q"
+                  type="text"
+                  onKeyUp=${(e) => setTextSearch(e.target.value)}
+                  value=${textSearch}
+                />
+                <${Dropdown} label="Company" htmlId="company" options=${manufacturers} value=${manuSearch} onChange=${(e) => setManuSearch(e.target.value)} />
+                <${Dropdown} label="Dataset" htmlId="dataset" options=${datasets} value=${datasetSearch} onChange=${(e) => setDatasetSearch(e.target.value)} />
+                <button type="submit" class="px-3 py-1 bg-orange-500 rounded-md">Search</button>
+              </form>
+
+              <div class="mx-auto w-3/4">
+                <ul class="flex flex-wrap justify-center gap-6">
+                  ${list.map(item => html`
+                    <${Item} 
+                      description=${item.description} 
+                      name=${item.name} 
+                      manufacturer=${item.manufacturer} 
+                      year=${item.year} 
+                      cloneof=${item.clone_of} 
+                      onClone=${handleOnClone}
+                    />
+                  `)}
+                </ul>
+              </div>
+            </div>
+          `;
+        };
+
+        render(html`<${App} />`, document.getElementById("app"));
+      </script>
+    </div>
+  </body>
+</html>

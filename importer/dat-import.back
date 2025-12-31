@@ -1,0 +1,153 @@
+const fs = require('fs')
+const path = require('path')
+const express = require('express')
+const Database = require('better-sqlite3')
+const { XMLParser } = require('fast-xml-parser')
+
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '@_',
+  allowBooleanAttributes: true,
+  isArray: name => name === 'game'
+})
+
+const DATS_DIR = path.resolve(`${__dirname}/datasets`)
+const DB_PATH = path.resolve(`${__dirname}/../app/db/games.sqlite`)
+
+const db = new Database(DB_PATH)
+db.pragma('journal_mode = WAL')
+db.pragma('synchronous = NORMAL')
+
+// Haupttabellen
+db.exec(`
+CREATE TABLE IF NOT EXISTS games (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  clone_of TEXT,
+  rom_of TEXT,
+  source_file TEXT,
+  description TEXT,
+  year INTEGER,
+  manufacturer TEXT,
+  comment TEXT,
+  driver_status TEXT,
+  dataset TEXT,
+  UNIQUE(name, dataset)
+);
+
+CREATE TABLE IF NOT EXISTS dat_imports (
+  dataset TEXT PRIMARY KEY,
+  file_mtime INTEGER,
+  imported_at INTEGER
+);
+`)
+
+// FTS5-Tabelle mit dataset
+db.exec(`
+DROP TABLE IF EXISTS games_fts;
+
+CREATE VIRTUAL TABLE games_fts
+USING fts5(
+  name,
+  manufacturer,
+  description,
+  dataset,
+  year UNINDEXED,
+  content='games',
+  content_rowid='id'
+);
+`)
+
+// Initiales Rebuild
+db.exec(`
+INSERT INTO games_fts(rowid, name, manufacturer, description, dataset, year)
+SELECT id, name, manufacturer, description, dataset, year
+FROM games;
+`)
+
+// Prepared Statements
+const insertGame = db.prepare(`
+INSERT OR REPLACE INTO games (
+  name, clone_of, rom_of, source_file,
+  description, year, manufacturer,
+  comment, driver_status, dataset
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`)
+
+const insertFTS = db.prepare(`
+INSERT OR REPLACE INTO games_fts
+(rowid, name, manufacturer, description, dataset, year)
+VALUES (?, ?, ?, ?, ?, ?)
+`)
+
+const insertImport = db.prepare(`
+INSERT OR REPLACE INTO dat_imports (
+  dataset, file_mtime, imported_at
+) VALUES (?, ?, ?)
+`)
+
+// .dat Dateien einlesen
+const datFiles = fs.readdirSync(DATS_DIR).filter(f => f.endsWith('.dat'))
+if (!datFiles.length) console.log('Keine .dat Dateien gefunden')
+
+// Bereits importierte Dateien
+const knownImports = new Map(
+  db.prepare('SELECT dataset, file_mtime FROM dat_imports').all()
+    .map(r => [r.dataset, r.file_mtime])
+)
+
+// Import-Transaction
+const importTransaction = db.transaction((files) => {
+  let importedGames = 0
+  let skippedFiles = 0
+
+  for (const file of files) {
+    const filePath = path.join(DATS_DIR, file)
+    const mtime = fs.statSync(filePath).mtimeMs
+
+    if (knownImports.get(file) === mtime) {
+      skippedFiles++
+      continue
+    }
+
+    const xml = fs.readFileSync(filePath, 'utf-8')
+    const parsed = parser.parse(xml)
+    if (!parsed?.datafile?.game) continue
+
+    for (const game of parsed.datafile.game) {
+      const info = [
+        game['@_name'] ?? null,
+        game['@_cloneof'] ?? null,
+        game['@_romof'] ?? null,
+        game['@_sourcefile'] ?? null,
+        game.description ?? null,
+        game.year ? Number(game.year) : null,
+        game.manufacturer ?? null,
+        game.comment ?? null,
+        game.driver?.['@_status'] ?? null,
+        file // dataset
+      ]
+      const result = insertGame.run(...info)
+      const rowid = result.lastInsertRowid
+
+      insertFTS.run(
+        rowid,
+        game['@_name'] ?? null,
+        game.manufacturer ?? null,
+        game.description ?? null,
+        file, // dataset
+        game.year ? String(game.year) : null
+      )
+      importedGames++
+    }
+
+    insertImport.run(file, mtime, Date.now())
+  }
+
+  return { importedGames, skippedFiles }
+})
+
+const { importedGames, skippedFiles } = importTransaction(datFiles)
+
+console.log(`✅ Imported: ${importedGames} Games`)
+console.log(`⏭️ Skipped Datasets: ${skippedFiles} not changed DAT-Files`)
