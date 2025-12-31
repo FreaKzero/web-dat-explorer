@@ -1,5 +1,16 @@
 # Web Dat Explorer
 
+## TODO
+- [ ] Preact Comboboxes
+- [ ] Top Navbar Preact
+- [ ] Pagination
+  - [ ] Backend
+  - [ ] Preact
+- [ ] Better Devmode for Frontend
+- [ ] Favourites (?)
+    - [ ] Backend
+    - [ ] Preact
+  
 ## Setup
 ### Install npm dependencies
 ```
