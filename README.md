@@ -18,7 +18,9 @@ DL_URL=
 #Image Url ((use $NAME in URL for replacement of identifier - gets cached via proxy)
 IMG_URL= 
 ```
-### Create or Import dat files to SQLite3 Database 
+### Create or Import dat files to SQLite3 Database
+Files will be only imported once based on last editdate of the File and Filename.
+
 1. Add your Dat files to `ìmporter/datasets`
 2. `npm run import`
 
