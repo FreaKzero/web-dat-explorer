@@ -1,6 +1,7 @@
 # Web Dat Explorer
 
 ## TODO
+- [ ] Bun (?)
 - [ ] Preact Comboboxes
 - [ ] Top Navbar Preact
 - [ ] Pagination
