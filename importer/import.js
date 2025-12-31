@@ -15,15 +15,13 @@ const DB_PATH = path.resolve(`${__dirname}/../app/db/games.sqlite`)
 
 const db = new Database(DB_PATH)
 
-// ===== PRAGMAS (Bulk Import freundlich) =====
 db.pragma('journal_mode = WAL')
 db.pragma('synchronous = NORMAL')
 db.pragma('foreign_keys = OFF')
 db.pragma('recursive_triggers = OFF')
 db.pragma('temp_store = MEMORY')
-db.pragma('cache_size = -100000') // ~100MB cache
+db.pragma('cache_size = -100000')
 
-// ===== Tabellen =====
 db.exec(`
 CREATE TABLE IF NOT EXISTS games (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +45,6 @@ CREATE TABLE IF NOT EXISTS dat_imports (
 );
 `)
 
-// ===== FTS + Trigger Setup =====
 db.exec(`
 DROP TABLE IF EXISTS games_fts;
 
@@ -99,10 +96,8 @@ CREATE TRIGGER games_au AFTER UPDATE ON games BEGIN
 END;
 `)
 
-// ===== Initialer Rebuild =====
 db.exec(`INSERT INTO games_fts(games_fts) VALUES ('rebuild')`)
 
-// ===== Prepared Statements =====
 const insertGame = db.prepare(`
 INSERT OR REPLACE INTO games (
   name, clone_of, rom_of, source_file,
@@ -117,18 +112,15 @@ INSERT OR REPLACE INTO dat_imports (
 ) VALUES (?, ?, ?)
 `)
 
-// ===== .dat Dateien =====
 const datFiles = fs.readdirSync(DATS_DIR).filter(f => f.endsWith('.dat'))
 if (!datFiles.length) console.log('Keine .dat Dateien gefunden')
 
-// ===== Bereits importiert =====
 const knownImports = new Map(
   db.prepare('SELECT dataset, file_mtime FROM dat_imports')
     .all()
     .map(r => [r.dataset, r.file_mtime])
 )
 
-// ===== Import Transaction =====
 const importTransaction = db.transaction(files => {
   let importedGames = 0
   let skippedFiles = 0
