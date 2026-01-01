@@ -3,6 +3,8 @@
 ## TODO
 - [ ] Check images in proxy for OK Status
 - [ ] ROM only Import
+- [ ] Bun (?)
+- [ ] Preact Comboboxes
 - [ ] Top Navbar Preact
 - [ ] Better Devmode for Frontend
 
