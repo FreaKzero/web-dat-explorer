@@ -6,9 +6,9 @@ require('dotenv').config()
 
 const DL_URL = process.env.DL_URL || null
 const WIKI_URL = process.env.WIKI_URL || `http://adb.arcadeitalia.net/dettaglio_mame.php?game_name=$NAME`
-const IMG_URL = process.env.ING_URL || null
+const IMG_URL = process.env.IMG_URL || null
 
-if (!DL_URL || IMG_URL) {
+if (!DL_URL || !IMG_URL) {
   console.error('Please Provide an .env File with DL_URL and IMG_URL - Exiting');
   process.exit(42);
 }
@@ -62,7 +62,7 @@ app.get('/dropdowns', (req, res) => {
   const rows = db.prepare(`SELECT dataset, manufacturer FROM games`).all();
 
   const datasets = [...new Set(rows.map(r => r.dataset))];
-  const manufacturers = [...new Set(rows.map(r => r.manufacturer))];
+  const manufacturers = [...new Set(rows.map(r => r.manufacturer).sort((a,b) => a.localeCompare(b)))];
 
   res.json({ datasets, manufacturers });
 });

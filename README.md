@@ -1,16 +1,22 @@
 # Web Dat Explorer
 
 ## TODO
-- [ ] Preact Comboboxes
+- [ ] Check images in proxy for OK Status
+- [ ] ROM only Import
 - [ ] Top Navbar Preact
+- [ ] Better Devmode for Frontend
+
+- [ ] Preact Comboboxes
+  - [ ] Populate Comboboxes based on selected categories (backend)	
+ 
 - [ ] Pagination
   - [ ] Backend
   - [ ] Preact
-- [ ] Better Devmode for Frontend
+
 - [ ] Favourites (?)
     - [ ] Backend
     - [ ] Preact
-  
+
 ## Setup
 ### Install npm dependencies
 ```

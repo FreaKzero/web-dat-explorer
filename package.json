@@ -2,7 +2,8 @@
   "scripts": {
     "import": "node importer/import.js",
     "serve": "node ./app/server.js",
-    "dev": "nodemon ./app/server.js"
+    "dev:backend": "nodemon ./app/server.js",
+    "dev:frontend": "node ./devserver.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.5.0",
